@@ -430,9 +430,9 @@ FOR /F "delims=: tokens=*" %%A IN ('FINDSTR /B ::: "%~f0"') DO @ECHO(%%A)
 :::       "8             I8
 :::                      I8_
 ::: Inspired by a        I8""
-::: adorably beautiful   I8
-::: & special flower.   _I8
-::: - E. D.            ""I8
+::: beautiful & special  I8
+::: flower. - E. D.     _I8
+:::                    ""I8
 :::                      I8
 CALL :PressAnyKeyToReturn
 GOTO :MainMenu
