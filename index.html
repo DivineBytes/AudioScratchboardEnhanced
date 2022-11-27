@@ -1,0 +1,2009 @@
+<html>
+	<head>
+		<style>
+			html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: black; }		
+			canvas { position: fixed; top: 0; left; 0; }
+			#canvas { display: block; }
+			#canvasBg { filter: blur( 10px ); }
+			#fps { position: absolute; top: 0; left: 0; padding: 10px; color: white; z-index: 10000; }	
+			#cpu-warning { display: none; position: absolute; top: 0; left: 0; right: 0; background: black; padding: 50px; color: white; text-align: center; font-family: sans-serif; font-size: 1.5em;}
+			#cpu-warning h2 {color: red;}
+			
+			select, option { 
+				background: black;
+				color: white;
+			    outline: none
+			}
+		</style>
+		<style>
+			#background-wrapper { position: fixed; width: 100%; height: 100%; top: 0; left: 0; }
+			#background-image1 { position: absolute; width: 100%; height: 100%; top: 0; left: 0;  }	
+			#background-image2 { position: absolute; width: 100%; height: 100%; top: 0; left: 0; }	
+			#background-image1-wrapper { position: absolute; width: 100%; height: 100%; top: 0; left: 0;  }	
+			#background-image2-wrapper { position: absolute; width: 100%; height: 100%; top: 0; left: 0;  }	
+		</style>
+		<style>
+			.radial-menu 
+			{
+				position: fixed;
+				display: table-cell;
+				text-align: center;
+				vertical-align: center;
+				line-height: 50px;
+				cursor: pointer;
+				user-select: none;
+				width: 50px;
+				height: 50px;
+				background-position: center center;
+				background-repeat: no-repeat;
+				background-size: contain;
+				background: #404040;
+				border-radius: 50px;
+				border: 1px solid white;
+				color: white;	
+				
+			}
+			.radial-menu-root
+			{	
+			}
+			.radial-menu-item 
+			{
+				
+			}
+			
+			#svg-panel {
+				display: none;
+				position: fixed;
+				top: 0;
+				left: 0;
+				background: black;
+				color: white;
+				font-family: sans-serif;
+				padding: 10px;
+				border: 1px solid silver;
+			}
+			#svg-panel td {
+				color: white;
+			}
+			
+			#svg-progress-wrapper {
+				width: 100%;
+				background: #800;
+				height: 20px;
+			}
+			#svg-progress {
+				background: #080;
+				height: 20px;
+			}
+			
+			#edit-panel {
+				display: none;
+				position: fixed;
+				top: 0;
+				left: 0;
+				background: black;
+				color: white;
+				font-family: sans-serif;
+				padding: 10px;
+				border: 1px solid silver;
+			}
+			#edit-panel table {
+			}
+			#edit-panel td {
+				color: white;
+			}
+			#edit-panel button {
+				width: 24px; 
+				height: 24px;
+				font-size: 20px;
+				line-height: 20px;
+				overflow: hidden;
+				text-align: center;
+				padding: 0 0;
+				background: #ccc;
+				color: #000;
+				border: none;
+			}
+			#edit-panel button:active {
+				background: #444;
+				color: white;
+			}
+			
+			.menu { 
+				background: silver;
+				color: black;
+				position: fixed;
+				z-index: 1000;
+				list-style-type: none;
+				padding: 0;
+				margin: 0;
+			}
+			.menu li { 
+				background: silver;
+				color: black;
+				padding: 10px;
+				border: 1px outset grey;
+				white-space: nowrap;
+			}
+			.menu li:hover { 
+				background: #8cf;
+				color: black;
+				padding: 10px;
+				border: 1px outset grey;
+			}
+			.menu > li > .menu { 
+				display: none;
+			}
+			
+			.menu > li:hover > .menu { 
+				display: block;
+			}
+			
+			.menu  .menu-label {
+				line-height: 15px;
+				display: inline-block;
+			}
+			
+			.menu  .menu-icon {
+				display: inline-block;
+				overflow: visible;
+				width: 30px;
+				height: 30px;
+				margin: -9px 10px -9px -9px;
+				background-color: #888;
+			}
+		</style>
+		
+		<!-- 
+			log.js : overwrites console.log and console.error to display messages within the wallpaper. 
+		-->
+		<script src="log.js"></script>
+		
+		<!-- 
+			timer.js : simple timer class to measure performance 
+		-->
+		<script src="timer.js"></script>
+		
+		<!-- 
+			audioarray.js : has a class that holds data for one channel ( left or right ) of the fft data with some
+							useful functions to access it 
+		-->
+		<script src="audioarray.js"></script>
+		
+		<!-- 
+			audiodata.js : has a class that holds 2 audiodata instances ( left/right channels ) with some useful
+						   functions to access it 
+		-->
+		<script src="audiodata.js"></script>
+		
+		<!-- 
+			audiocollection.js : is currently unused, i have used this to bunch up and average multiple fft data 
+								 frames that might occur within one render frame when rendering at a low FPS 
+		-->
+		<script src="audiocollection.js"></script>
+		
+		<!--
+			 audiodata-polyfill.js : fakes wallpaperRegisterAudioListener function for testing in the browser 
+			 						 ( also see the guide as thre is another better alternative to this if needed ) 
+		-->
+		<script src="audiodata-polyfill.js"></script>
+		
+		<!-- 
+			utils.js : contains some functions for processing the properties as well as a function to render 
+					  the data in an audioframe object
+		 -->
+		<script src="utils.js"></script>
+		
+		<!-- 
+			audioframe.js : somewhat misnamed class written to contain all the audio processing demonstrated 
+							with configurable options 
+		-->
+		<script src="audioframe.js"></script>
+		
+		<script src="generators.js"></script>
+		
+		<script src="delayed.js"></script>
+		
+		<script src="flatten.js"></script>
+		
+		<script src="svgpanel.js"></script>
+		<script src="editpanel.js"></script>
+		<script src="shapestorage.js"></script>
+		<script src="radialmenu.js"></script>
+		<script src="listmenu.js"></script>
+		
+		
+		<script src="background.js"></script>		
+		<link href="background-anim.css" rel="stylesheet" type="text/css">
+	</head>
+	<body>
+		<div id="background-wrapper">
+			<div id="background-image1-wrapper"><div id="background-image1"></div></div>
+			<div id="background-image2-wrapper"><div id="background-image2"></div></div>
+		</div>
+		<canvas id="canvasBg"></canvas>
+		<canvas id="canvas"></canvas>
+		<img id="foreground-image"/>
+		<div id="cpu-warning">
+			<h2>CPU Usage Warning!</h2>
+			<p>
+				The CPU usage of this wallpaper is fairly high at the moment. Lower some settings. 
+				<br>
+				This might be caused by: 
+				<small>
+					Render method that is set to fill with large objects. <br>
+					High detail level<br>
+					Possibly glow effect.
+				</small>
+				<br>
+				<br>
+				Estimated CPU usage: <span id="usage-label"></span>
+			</p>
+		</div>
+		<div id="edit-panel">
+			<table>
+				<tr>
+					<td>
+						<button id="close" style=" background: red; border: none; font-weight: bold;">&times;</button>
+					</td>
+				</tr>
+				<tr>
+					<td>Move:</td>
+					<td>
+						<button id="move-up">&#x25B2;</button>
+						<button id="move-down">&#x25BC;</button>
+						<button id="move-left">&#x25C4;</button>
+						<button id="move-right">&#x25BA;</button>
+					</td>
+				</tr>
+				<tr>
+					<td>Rotate:</td>
+					<td>
+						<button id="rotate-up">&#x25B2;</button>
+						<button id="rotate-down">&#x25BC;</button>
+					</td>
+				</tr>
+				<tr>
+					<td>Scale:</td>
+					<td>
+						<button id="scale-up">&#x25B2;</button>
+						<button id="scale-down">&#x25BC;</button>
+					</td>
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+				</tr>
+				<tr>
+					<td>Delete:</td>
+					<td>
+						<button id="delete">&times;</button>
+					</td>
+				</tr>
+			</table>
+		</div>
+		<div id="svg-panel">
+			<table>
+				<tr>
+					<td>
+						<button id="svg-close" style="float: right; background: red; border: none; font-weight: bold;">&times;</button>
+						<strong>Import SVG File</strong>
+						<br>
+						<small><strong>See the discussion on workshop page for more info on how to use.</strong></small>
+						<br>
+						<br>
+						<small>Importing will start automatically when you select a file. The remove details option indicates<br>how much detail will be removed after import to shrink data size and speed up some calculations.</small>
+						<br>
+						<br>
+						<small>Importing can be heavy on the cpu and take a while to process.</small>
+						<hr>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<span style="float: right;" id="svg-remove-detail-amount-wrapper">
+							<small  style="position: relative; top: -5.5em; display: inline-block;">Remove Details:</small>
+							<select id="svg-remove-detail-amount" size="5">
+								<option value="0">Remove nothing</option>
+								<!-- actual value is the sqrt of the option value.. also dividing by 4 as imported dimensions as set to 400x400 -->
+								<option value="0.25" selected >shorter than 0.12% of total dimension</option>
+								<option value="1">shorter than  0.25% of total dimension</option>
+								<option value="4">shorter than  0.5% of total dimension</option>
+								<option value="16">shorter than  1% of total dimension</option>
+							</select>
+						</span>
+						<input id="svg-file" type="file" accept=".svg" />
+						<br>
+						<br>
+						<div id="svg-progress-wrapper">
+							<div id="svg-progress"></div>
+						</div>
+					</td>
+				</tr>
+			</table>
+		</div>
+		<div id="fps"></div>
+		
+		<!-- all main scripting -->
+		<script>
+			// hide log & timer
+			log.hide();
+			timer.hide();
+			
+			// define global variables
+			var canvas = null;
+			var context = null;
+			var canvasBg = null;
+			var contextBg = null;
+			
+			// variables regarding use fps settings & frameskipping
+			var targetFramerate = 30; // wallpaper engine will supply us with the target framerate and we will use a sloppy frameskipping mechanism to adjust to that.
+			var targetFramerateUser = 0; // used to override wallpaper engines settings with wallpaper settings .. when value is 0 targetFramerate is used
+			var nextRenderTimestamp = 0; // used from frameskipping to determine if current time is before or after we should render the next frame (see render function)
+			
+			// variable regarding fps
+			var fpsElement = null;
+			var fpsPrevUpdate = 0;
+			var fpsFrameCount = 0;
+			var fpsRenderTime = 0;
+			
+			var cpuWarningVisible = false;
+			var cpuWarningElement = null;//cpu-warning
+			var cpuWarningLabel = null;//usage-label
+			
+			var cpuCores = 4;
+			var cpuWarningAt = 10;
+			
+			// screen width & height ( maintained via onResize event )
+			var width, height;
+			
+			// render function to use
+			var renderFunction = 'default';
+			
+			//var bgColor = 'black';
+			//v//ar bgImage = '';
+			//var bgTintElement = null;
+			//var backgroundTint = 0;
+			//var backgroundBlur = 0;
+			
+			var cfgHeightCutoff = 0;
+			var heightCutoff = 0;
+			var heightDir = 3;
+			
+			var offsetX = 0;
+			var offsetY = 0;
+			var baseRotation = 0;
+
+			var fgElement = document.getElementById( 'foreground-image' );
+			var fgRotation = 0;
+			var fgOffsetX = 0;
+			var fgOffsetY = 0;
+			var fgScale = 0;
+			
+			/*
+				! audioFrame found in utils.js
+				
+				in audioFrame is where I store the audio data and do all processing of the incoming audio listener event
+				Most code regarding the wallpaper settings are found in there.
+			*/
+			var frame2; // is an AudioFrame object .. stores the "processes" data and is created in setup()
+			var frameHistory = [];
+			
+			var cfgRadiusFactor = 1;
+			var radiusFactor = 1;
+			var freqScaleAdjustment = 1;
+			var freqScaleAdjustmentAnim = true;
+			
+			var initialized = false;
+			var lastEqChange = -1000000000000;
+			
+			var useOutline = true;
+			var interpolationSteps = 1;
+			var interpolationBalanced = true;
+			var renderMethod = 1;
+			var animateWhenSilent = 1;
+			var animateWhenSilentHeight = 0.01;
+			
+			var userShape = new shapePointList();
+			var additionalShapes = [];
+			var defaultShapes = {
+				'circle': shapeCircle,
+				'heart': shapeHeart,
+				'cannabis': shapeLeaf,
+				'butterfly': shapeButterfly,
+				'pointlist': shapePointList
+			}
+			var defaultGenerators = {
+				'hazard': generatorBiohazard,
+				'pokeball': generatorPokeball,
+				'swirl': generatorSwirl,
+				'swirl2': generatorSwirlReversed,
+				'swirl3': generatorSwirl2,
+				'swirl4': generatorSwirl2Reversed,
+				'swirl5': generatorSwirl3,
+				'swirl6': generatorSwirl3Reversed,
+				'swirl7': generatorSwirl4,
+				'swirl8': generatorSwirl4Reversed,
+				'circlePattern1': generatorLeaf6,
+				'circlePattern2': generatorLeaf8,
+				'circlePattern3': generatorLeaf26,
+				'circlePattern4': generatorLeaf36,
+				'circlePattern5': generatorLeaf28,
+				'circlePattern6': generatorSwirl3BiDirectional,
+				'circlePattern7': generatorSwirl4BiDirectional,
+				'cross': generatorCross,
+				'cross2': generatorCross2,
+				'plus': generatorPlus,
+				'h-line': generatorHLine,
+				'v-line': generatorVLine,
+				'h-line2': generatorH2Line,
+				'v-line2': generatorV2Line,
+				'h-line3': generatorH3Line,
+				'v-line3': generatorV3Line,
+				'diamond': generatorDiamond,
+				'square': generatorSquare,
+				'peace': generatorPeace,
+				'pentagram': generatorPentagram,
+				'yinyang': generatorYinYang,
+				'atom': generatorAtom,
+				'circleTriangle': generatorCircleTriangle,
+				'heart': generatorHeart,
+				'heart2': generatorHeart2,
+				'heart3': generatorHeart3,
+				'circle': generatorCircle,
+				'triangle': generatorTriangle,
+				'star': generatorStar,
+				'random': generatorRandom,
+				'test': generatorTest
+			}
+			
+			// Random seconds interval
+			var randomSecondsInterval = 3;
+
+			var shapeList = new ShapeList();
+			var gen = new generatorSwirlReversed();
+			gen.generate( shapeList, randomSecondsInterval );
+			
+			var hadAudioFrame = false;
+			var isPaused = false;
+			var allowDrawing = false;
+			var lockedDrawing = false;
+			
+			var bg;
+			var bgSettingsProxy;
+			var fnInitSlideshow;
+							
+			var color1 = [0, 1, 0.5];
+			var color2 = [0.333333, 1, 0.5];
+			var color3 = [0.666666, 1, 0.5];
+			var colorGradient = 2;
+			var colorRotation = true;
+			var colorGlow = 0;
+			var colorGlowStrength = 2;
+			
+
+			var updateStorageStats = function(){
+		        var total = 0;
+		        var keys = '';
+		      
+		        try {
+			        for(var key in window.localStorage){
+			            if(window.localStorage.hasOwnProperty(key)){
+			            	var size = ( key.length + window.localStorage[key].length ) * 2;;
+			                total += size;
+			        		keys += key + ': ' + ( size/1024 ).toFixed(1) + ',<br>';
+			        		try {
+				        		switch( key ) {
+				        			case 'as_slot1': el71.setLabel( 'Slot 1 <small>(' + ( size / 1024 ).toFixed(0) + 'KB)</small>' ); break;
+				        			case 'as_slot2': el72.setLabel( 'Slot 2 <small>(' + ( size / 1024 ).toFixed(0) + 'KB)</small> ' ); break;
+				        			case 'as_slot3': el73.setLabel( 'Slot 3 <small>(' + ( size / 1024 ).toFixed(0) + 'KB)</small> ' ); break;
+				        			case 'as_slot4': el74.setLabel( 'Slot 4 <small>(' + ( size / 1024 ).toFixed(0) + 'KB)</small> ' ); break;
+				        			case 'as_slot5': el75.setLabel( 'Slot 5 <small>(' + ( size / 1024 ).toFixed(0) + 'KB)</small> ' ); break;
+				        			case 'as_slot6': el76.setLabel( 'Slot 6 <small>(' + ( size / 1024 ).toFixed(0) + 'KB)</small> ' ); break;
+				        			case 'as_slot7': el77.setLabel( 'Slot 7 <small>(' + ( size / 1024 ).toFixed(0) + 'KB)</small> ' ); break;
+				        			case 'as_slot8': el78.setLabel( 'Slot 8 <small>(' + ( size / 1024 ).toFixed(0) + 'KB)</small> ' ); break;
+				        			case 'as_slot9': el79.setLabel( 'Slot 9 <small>(' + ( size / 1024 ).toFixed(0) + 'KB)</small> ' ); break;
+				        			case 'as_slot10': el710.setLabel( 'Slot 10 <small>(' + ( size / 1024 ).toFixed(0) + 'KB)</small> ' ); break;
+				        			default: break;		        				
+				        		}
+				        	}
+			   				 catch( ex ) {  }  
+			            }
+			        }
+			    }
+			    catch( ex ) {  }  
+		        
+		        el70.setLabel( "Space Used: ~" + ( total / 1024 ).toFixed(0) + "KB / " + (1024*5).toFixed(0) + "KB" );
+		        
+		        return total;
+		    };
+    
+			var updateForegroundElement = function ()
+			{
+				var px = canvas.width / 2 + fgOffsetX - fgElement.width/2;
+				var py = canvas.height / 2 + fgOffsetY - fgElement.height/2;
+				fgElement.style.transform = 'translate( '+ px +'px,'+ py + 'px) rotate('+ -fgRotation +'deg) scale('+ (fgScale/100) +')'; 
+			}
+			
+			var editPanel = new EditPanel();
+			var svgPanel = new SvgPanel();
+			
+			var storage = new ShapeStorage();
+			/*
+			var menu2 = new listMenu( 'root', window.location.href.replace('index.html','') + 'icon_home.png', 'Menu');
+			//menu2.position( window.innerWidth/2, window.innerHeight/2 );
+			//menu2.show();
+			var el1 = menu2.addChild( 'item1', null, 'clear' ); 
+			//var el2 = menu.addChild( 'item2', null, 'load' );
+			//var el3 = menu.addChild( 'item3', null, 'save' );
+			var el4 = menu2.addChild( 'item4', null, 'close' );
+			var el5 = menu2.addChild( 'item4', null, 'draw' );
+			
+			var elD11 = el5.addChild( 'item7', null, 'scribble' );
+			var elD12 = el5.addChild( 'item8', null, 'line' );
+			//var elD13 = elD1.addChild( 'item8', null, 'h line' );
+			//var elD14 = elD1.addChild( 'item8', null, 'v line' );
+			
+			var elD21 = el5.addChild( 'item7', null, 'oval' );
+			var elD22 = el5.addChild( 'item8', null, 'circle' );
+			*/
+			var baseRef = window.location.href.replace('index.html','');
+			var menu = new listMenu( 'root', baseRef + 'icon_close.png', 'Close');
+			menu.position( window.innerWidth/2, window.innerHeight/2 );
+			
+			var delayedMenuHide = new delayed( function() { hideMenu(); }, 5000 );
+			
+			//var el4 = menu.addChild( 'item4', null, 'close' );
+			//var el2 = menu.addChild( 'item2', null, 'load' );
+			//var el3 = menu.addChild( 'item3', null, 'save' );
+			var el5 = menu.addChild( 'item4', baseRef + 'icon_scribble.png', 'Draw' );
+			var el6 = menu.addChild( 'item4', baseRef + 'icon_import.png', 'Import' );
+			var el1 = menu.addChild( 'item1', baseRef + 'icon_clear.png', 'Clear' );
+			var el7 = menu.addChild( 'item7', baseRef + 'icon_disk.png', 'Storage' );
+			
+			//var elD1 = el5.addChild( 'item8', null, 'line' );
+			//var elD2 = el5.addChild( 'item9', null, 'circle' );
+			//var elD3 = el5.addChild( 'item10', null, 'square' );
+			
+			var el71 = el7.addChild( 'item7', baseRef + '.png', 'Slot 1' );
+			var el72 = el7.addChild( 'item7', baseRef + '.png', 'Slot 2' );
+			var el73 = el7.addChild( 'item7', baseRef + '.png', 'Slot 3' );
+			var el74 = el7.addChild( 'item7', baseRef + '.png', 'Slot 4' );
+			var el75 = el7.addChild( 'item7', baseRef + '.png', 'Slot 5' );
+			var el76 = el7.addChild( 'item7', baseRef + '.png', 'Slot 6' );
+			var el77 = el7.addChild( 'item7', baseRef + '.png', 'Slot 7' );
+			var el78 = el7.addChild( 'item7', baseRef + '.png', 'Slot 8' );
+			var el79 = el7.addChild( 'item7', baseRef + '.png', 'Slot 9' );
+			var el710 = el7.addChild( 'item7', baseRef + '.png', 'Slot 10' );
+			var el70 = el7.addChild( 'item7', '', 'Usage:' );
+			
+			var el7012 = el71.addChild( 'item7', baseRef + 'icon_diskl.png', 'Load' );
+			var el7011 = el71.addChild( 'item7', baseRef + 'icon_disks.png', 'Save' );
+			
+			var el7022 = el72.addChild( 'item7', baseRef + 'icon_diskl.png', 'Load' );
+			var el7021 = el72.addChild( 'item7', baseRef + 'icon_disks.png', 'Save' );
+			
+			var el7032 = el73.addChild( 'item7', baseRef + 'icon_diskl.png', 'Load' );
+			var el7031 = el73.addChild( 'item7', baseRef + 'icon_disks.png', 'Save' );
+			
+			var el7042 = el74.addChild( 'item7', baseRef + 'icon_diskl.png', 'Load' );
+			var el7041 = el74.addChild( 'item7', baseRef + 'icon_disks.png', 'Save' );
+			
+			var el7052 = el75.addChild( 'item7', baseRef + 'icon_diskl.png', 'Load' );
+			var el7051 = el75.addChild( 'item7', baseRef + 'icon_disks.png', 'Save' );
+			
+			var el7062 = el76.addChild( 'item7', baseRef + 'icon_diskl.png', 'Load' );
+			var el7061 = el76.addChild( 'item7', baseRef + 'icon_disks.png', 'Save' );
+			
+			var el7072 = el77.addChild( 'item7', baseRef + 'icon_diskl.png', 'Load' );
+			var el7071 = el77.addChild( 'item7', baseRef + 'icon_disks.png', 'Save' );
+			
+			var el7082 = el78.addChild( 'item7', baseRef + 'icon_diskl.png', 'Load' );
+			var el7081 = el78.addChild( 'item7', baseRef + 'icon_disks.png', 'Save' );
+			
+			var el7092 = el79.addChild( 'item7', baseRef + 'icon_diskl.png', 'Load' );
+			var el7091 = el79.addChild( 'item7', baseRef + 'icon_disks.png', 'Save' );
+			
+			var el7102 = el710.addChild( 'item7', baseRef + 'icon_diskl.png', 'Load' );
+			var el7101 = el710.addChild( 'item7', baseRef + 'icon_disks.png', 'Save' );
+			
+			el7012.onClick = function( e, el ) { storage.loadShapeList( 'as_slot1', shapeList ); shapeList.updateAutosave(); }
+			el7011.onClick = function( e, el ) { storage.saveShapeList( 'as_slot1', shapeList ); updateStorageStats(); }
+								
+			el7022.onClick = function( e, el ) { storage.loadShapeList( 'as_slot2', shapeList ); shapeList.updateAutosave(); }
+			el7021.onClick = function( e, el ) { storage.saveShapeList( 'as_slot2', shapeList ); updateStorageStats(); }
+			
+			el7032.onClick = function( e, el ) { storage.loadShapeList( 'as_slot3', shapeList ); shapeList.updateAutosave(); }
+			el7031.onClick = function( e, el ) { storage.saveShapeList( 'as_slot3', shapeList ); updateStorageStats(); }
+						
+			el7042.onClick = function( e, el ) { storage.loadShapeList( 'as_slot4', shapeList ); shapeList.updateAutosave(); }
+			el7041.onClick = function( e, el ) { storage.saveShapeList( 'as_slot4', shapeList ); updateStorageStats(); }
+								
+			el7052.onClick = function( e, el ) { storage.loadShapeList( 'as_slot5', shapeList ); shapeList.updateAutosave(); }
+			el7051.onClick = function( e, el ) { storage.saveShapeList( 'as_slot5', shapeList ); updateStorageStats(); }
+			
+			el7062.onClick = function( e, el ) { storage.loadShapeList( 'as_slot6', shapeList ); shapeList.updateAutosave(); }
+			el7061.onClick = function( e, el ) { storage.saveShapeList( 'as_slot6', shapeList ); updateStorageStats(); }
+						
+			el7072.onClick = function( e, el ) { storage.loadShapeList( 'as_slot7', shapeList ); shapeList.updateAutosave(); }
+			el7071.onClick = function( e, el ) { storage.saveShapeList( 'as_slot7', shapeList ); updateStorageStats(); }
+								
+			el7082.onClick = function( e, el ) { storage.loadShapeList( 'as_slot8', shapeList ); shapeList.updateAutosave(); }
+			el7081.onClick = function( e, el ) { storage.saveShapeList( 'as_slot8', shapeList ); updateStorageStats(); }
+			
+			el7092.onClick = function( e, el ) { storage.loadShapeList( 'as_slot9', shapeList ); shapeList.updateAutosave(); }
+			el7091.onClick = function( e, el ) { storage.saveShapeList( 'as_slot9', shapeList ); updateStorageStats(); }
+						
+			el7102.onClick = function( e, el ) { storage.loadShapeList( 'as_slot10', shapeList ); shapeList.updateAutosave(); }
+			el7101.onClick = function( e, el ) { storage.saveShapeList( 'as_slot10', shapeList ); updateStorageStats(); }
+			
+			var elD11 = el5.addChild( 'item7', baseRef + 'icon_scribble.png', 'Scribble' );
+			var elD12 = el5.addChild( 'item8', baseRef + 'icon_line.png', 'Line' );
+			//var elD13 = elD1.addChild( 'item8', null, 'h line' );
+			//var elD14 = elD1.addChild( 'item8', null, 'v line' );
+			
+			var elD21 = el5.addChild( 'item7', baseRef + 'icon_oval.png', 'Oval' );
+			var elD22 = el5.addChild( 'item8', baseRef + 'icon_circle.png', 'Circle' );
+			
+			var elD31 = el5.addChild( 'item7', baseRef + 'icon_rect.png', 'Rect' );
+			var elD32 = el5.addChild( 'item8', baseRef + 'icon_square.png', 'Square' );
+			
+			el1.onClick = function( e, el ) {  hideMenu(); shapeList.empty(); }
+			menu.onClick = function( e, el ) { hideMenu();  }
+			el6.onClick = function( e, el ) { hideMenu(); svgPanel.show(); }
+			
+			elD11.onClick = function( e, el ) { drawController = new mouseDrawScribble(); hideMenu();}
+			elD12.onClick = function( e, el ) { drawController = new mouseDrawLine(); hideMenu(); }
+			
+			elD21.onClick = function( e, el ) { drawController = new mouseDrawOval(); hideMenu();}
+			elD22.onClick = function( e, el ) { drawController = new mouseDrawCircle(); hideMenu(); }
+			
+			elD31.onClick = function( e, el ) { drawController = new mouseDrawRect(); hideMenu();}
+			elD32.onClick = function( e, el ) { drawController = new mouseDrawSquare(); hideMenu(); }
+			
+			hideMenu();
+			                   
+			   /*                                       
+			el2.addChild( 'item1', null, 'select' );
+			el2.addChild( 'item2', 'item2', 'item2' );
+			el2.addChild( 'item3', 'item3', 'item3' );
+			el2.addChild( 'item4', 'item4', 'item4' );
+			el2.addChild( 'item5', 'item5', 'item5' );
+			el2.addChild( 'item5', 'item5', 'item5' );
+			     */                                     
+			/**
+			 * setup wallpaper stuff
+			 **/
+			function setup()
+			{
+				bg = new Background( 	document.body, 
+										document.getElementById('background-image1' ), 
+										document.getElementById('background-image2' ), 
+										document.getElementById('background-image1-wrapper' ), 
+										document.getElementById('background-image2-wrapper' ) );
+										
+				// delay initialisation until we got the first properties
+				fnInitSlideshow = function() { 
+					bg.play(true); 	 // start the slideshow loop
+					fnInitSlideshow = null;	
+				}
+				
+								
+				// arguments are the background instance and assigning the property names
+				// leave a property out if you dont use it or set it to null
+				bgSettingsProxy = new BackgroundSettingsProxy( bg, {
+					'background-source': 'backgroundSource',
+					
+					'video-file': 'backgroundVideo', //  setting of type file
+					'video-volume': 'backgroundVideoVolume', //  setting of type file
+					
+					'image-file': 'backgroundImage', //  setting of type file
+					'image-folder': 'slideshowFolder', //  setting of type directory
+					'image-opacity': 'backgroundOpacity', //  setting of type slider/combo with values 0 - 100 
+					'image-size': 'backgroundSize',
+					
+					'slideshow-use-transitions': 'slideshowUseTransitions', // setting of type bool/combo with true/false ( numeric values 0 and 1 should work too )
+					'slideshow-transition-duration': 'slideshowTransitionDuration', // setting of type slider/combo with values 0 to 3600 ( 1 hour )
+					'slideshow-interval': 'slideshowInterval', // setting of type slider/combo with int values
+					'slideshow-interval-multiply': 'slideshowIntervalMultiplier', // setting of type slider/combo with int values
+					
+					'color-1': 'backgroundColor', //  setting of type color ( or combo if you set values to color notation, aka '1 0 0' for red )
+					
+					'gradient-type': 'backgroundHorizontal',  //  setting of type combo with options 'radial' | 'linear'
+					
+					'color-count': 'backgroundColorCount',  //  setting of type slider/combo with values 1 - 5
+					'color-1': 'backgroundColor', //  setting of type color ( or combo if you set values to color notation, aka '1 0 0' for red )
+					'color-2': 'backgroundColor2', //  setting of type color ( or combo if you set values to color notation, aka '1 0 0' for red )
+					'color-3': 'backgroundColor3', //  setting of type color ( or combo if you set values to color notation, aka '1 0 0' for red )
+					
+					
+					'slideshow-transition-fade': 'slideshowTransFade',
+					'slideshow-transition-fade-in': 'slideshowTransFadeIn',
+					'slideshow-transition-fade-out': 'slideshowTransFadeOut',
+					'slideshow-transition-zoom-in': 'slideshowTransZoomIn',
+					'slideshow-transition-zoom-out': 'slideshowTransZoomOut',
+					'slideshow-transition-zoom-horz-in': 'slideshowTransZoomHorzIn',
+					'slideshow-transition-zoom-horz-out': 'slideshowTransZoomHorzOut',
+					'slideshow-transition-zoom-vert-in': 'slideshowTransZoomVertIn',
+					'slideshow-transition-zoom-vert-out': 'slideshowTransZoomVertOut',
+					'slideshow-transition-move-left': 'slideshowTransMoveLeft',
+					'slideshow-transition-move-right': 'slideshowTransMoveRight',
+					'slideshow-transition-move-top': 'slideshowTransMoveTop',
+					'slideshow-transition-move-bottom': 'slideshowTransMoveBottom',
+					'slideshow-transition-shuffle-left': 'slideshowTransShuffleLeft',
+					'slideshow-transition-shuffle-right': 'slideshowTransShuffleRight',
+					'slideshow-transition-shuffle-top': 'slideshowTransShuffleTop',
+					'slideshow-transition-shuffle-bottom': 'slideshowTransShuffleBottom'
+				
+				});
+						
+				fpsElement = document.getElementById('fps');
+				fpsElement.style.display = 'block';
+				
+				fgElement = document.getElementById('foreground-image');
+				fgElement.style.display = 'none';
+				fgElement.onerror = function() { fgElement.style.display = 'none'; }
+				fgElement.onload = function() { fgElement.style.display = 'block'; updateForegroundElement();}
+				//bgTintElement = document.getElementById('tint'); 
+				
+				canvas = document.getElementById('canvas'); // reference to our canvas element
+				context = canvas.getContext('2d');  // reference to our context
+				
+				canvasBg = document.getElementById('canvasBg'); // reference to our canvas element
+				contextBg = canvasBg.getContext('2d');  // reference to our context
+			
+				cpuWarningElement = document.getElementById('cpu-warning');
+				cpuWarningLabel = document.getElementById('usage-label'); 
+				
+								
+				// create container to store processed data
+				frame2 = new AudioFrame({
+					normalize: true,
+					normalizeFactor: 0,
+					motionBlur: true,
+					motionBlurFactor: 1,
+					smooth: true,
+					smoothFactor: 0.75,
+					powerOf: 4,
+					mono: true
+				});
+				/*
+				for( var i = 0; i < 64; i++ )
+				{
+					var f = frame2.idxToFreq( i );
+					var j = frame2.freqToIdx( f );
+					console.log( i + ':' + j + ' -> ' + f )
+				}*/
+			}
+			
+			/**
+			 * processing anything regarding frameskipping
+			 *
+			 * @returns true when should skip
+			 **/
+			function shouldSkipFrame( timestamp )
+			{
+				// should we skip this frame?
+				
+				if( timestamp < nextRenderTimestamp ) {
+					return true;
+				}
+				
+				// update time for next frame to render
+				var frameInterval = targetFramerateUser > 0 
+									? 1000 / targetFramerateUser
+									: 1000 / targetFramerate;		
+				nextRenderTimestamp = Math.floor( timestamp / frameInterval ) * frameInterval + frameInterval;
+				return false;
+				
+			}
+			
+			/**
+			 * measures framerate & updates framerate label
+			 **/
+			function updateFps( timestamp )
+			{ 
+				if( timestamp > fpsPrevUpdate + 1000 )
+				{
+					var diff = ( timestamp - fpsPrevUpdate ) / 1000; // time diff in seconds
+					var fps = fpsFrameCount / diff; // adjust framerate to exactly 1 second 
+					
+					
+					var cpuUsage = fpsRenderTime/10/cpuCores + 2;
+					cpuUsage *= 1.3;
+					if( cpuUsage > 99 ) cpuUsage = 99;
+					
+					//fpsElement.innerText = true // simple way of hiding fps
+					//						? fps.toFixed(1) + ' FPS / '  + ( cpuUsage ).toFixed(1) + '% ' + fpsRenderTime
+					//						: '';
+					
+					
+					if( cpuWarningAt < cpuUsage && !cpuWarningVisible )
+					{
+						cpuWarningVisible = true;
+						cpuWarningElement.style.display = 'block';
+						cpuWarningLabel.innerText = ( cpuUsage ).toFixed(0) + '%';
+					}
+					else if( cpuWarningAt > cpuUsage && cpuWarningVisible )
+					{
+						cpuWarningVisible = false;
+						cpuWarningElement.style.display = 'none';
+					}
+					else if( cpuWarningVisible ) {
+						cpuWarningLabel.innerText = ( cpuUsage ).toFixed(0) + '%';
+					}
+					fpsFrameCount = 0;
+					fpsPrevUpdate = timestamp;
+					fpsRenderTime = 0;
+					
+					
+				}
+				fpsFrameCount++;
+			}
+			
+			var h = 0;
+			var prevTimestamp;
+			var timeDiff;
+			var frameCount = 0;
+			/**
+			 * render wallpaper
+			 **/
+			function render( timestamp ) // requestAnimationFrame supplies its own timestamp. no need for performance.now();
+			{					
+				frameCount++;
+				var t0 = performance.now();
+				timestamp = timestamp || performance.now();
+				if( timestamp > 2000 ) initialized = true;
+				
+				// queue next frame            
+				//window.requestAnimationFrame( render );
+				
+				// frame skipping to maintain user selected framerate
+				if( isPaused || !hadAudioFrame || shouldSkipFrame( timestamp ) ){
+					setTimeout( render, isPaused ? 1000 : 8.33 );
+					return;
+				} 		
+				
+				hadAudioFrame = false;		
+				
+				
+				timeDiff = timestamp - prevTimestamp;
+				prevTimestamp = timestamp;
+				
+				updateFps( timestamp );
+				 
+				// menu.update();
+				//
+				// now on to actual render some stuff				
+				//
+				try {
+					timer.start('render');
+					
+					// render a black background
+					//context.fillStyle = 'rgb( 0, 0, 0 )';
+					//context.fillRect( 0, 0, width, height );
+					
+					var onlyClear = ( animateWhenSilent == 2 && !frame2.hasAudio );
+					
+					context.globalCompositeOperation = 'destination-out';
+					context.fillStyle = onlyClear ? 'rgba(0,0,0,1)' : 'rgba(0,0,0,0.6)';
+					context.fillRect(0, 0, this.width, this.height);	
+					context.globalCompositeOperation = 'source-over';
+					
+					if( colorGlow > 0 ) {
+						contextBg.globalCompositeOperation = 'destination-out';
+						contextBg.fillStyle = 'rgba(0,0,0,1)';
+						contextBg.fillRect(0, 0, this.width, this.height);	
+						contextBg.globalCompositeOperation = 'source-over';
+					}
+					
+					if( onlyClear ) {
+						setTimeout( render, isPaused ? 1000 : 8.33 );
+						return;
+					}
+					// renderAudioFrame() can found in utils.js
+					
+					context.save();
+					context.translate( offsetX, offsetY );
+				  	context.translate(width/2, height/2);	
+					context.rotate( baseRotation * Math.PI / 180 );
+					context.translate(-width/2, -height/2);
+			
+					var v = colorRotation 
+								? ( 360 * 1/6  ) + ( ++h/1 % 360 )
+								: 0;
+					var col1 = 'hsla(  ' + (color1[0]*360+v) + ', ' + Math.round( color1[1]*100) + '%, ' + Math.round( color1[2]*100) + '%, '+ 1 +' )';
+					var col2 = 'hsla(  ' + (color2[0]*360+v) + ', ' + Math.round( color2[1]*100) + '%, ' + Math.round( color2[2]*100) + '%, '+ 1 +' )';
+					var col3 = 'hsla(  ' + (color3[0]*360+v) + ', ' + Math.round( color3[1]*100) + '%, ' + Math.round( color3[2]*100) + '%, '+ 1 +' )';
+					
+					var gradient;
+					switch( colorGradient ) {
+						case 0: 
+							gradient = col1;
+							break;
+						case 1:
+							gradient = context.createRadialGradient(width/2, height/2, 0, width/2, height/2, (width+height)/4);
+							gradient.addColorStop(0, col1);
+							gradient.addColorStop(0.5, col2);
+							gradient.addColorStop(1, col3);
+							break;
+						case 2:
+							gradient = context.createLinearGradient(0, height/2, width, height/2 );
+							gradient.addColorStop(0, col1);
+							gradient.addColorStop(0.5, col2);
+							gradient.addColorStop(1, col3);
+							break;
+						case 3:
+							gradient = context.createLinearGradient(width/2, 0, width/2, height );
+							gradient.addColorStop(0, col1);
+							gradient.addColorStop(0.5, col2);
+							gradient.addColorStop(1, col3);
+							break;
+					} 
+
+
+					shapeList.render( context, gradient, interpolationSteps, interpolationBalanced, renderMethod );
+					
+					context.restore();
+					
+					var mousePath = drawController.points;
+					if( mousePath.length > 1 ) {
+						
+						context.beginPath();
+						context.strokeStyle = gradient;
+						context.lineWidth = 1;
+						//context.strokeStyle = 'rgba( 255, 255, 255, 0.5 )';
+						context.moveTo( mousePath[0].x, mousePath[0].y );
+						for( var i = 1; i < mousePath.length; i++ )
+						{                
+							var x = mousePath[i].x;
+							var y = mousePath[i].y;
+							context.lineTo(x, y );
+						}
+						context.stroke();
+					}
+					
+					/** /
+					context.beginPath();
+					context.lineWidth = 0.5;
+					context.strokeStyle = 'rgba( 255, 255, 255, 0.5 )';
+					context.moveTo( width/2, 0 );
+					context.lineTo( width/2+1, height );
+					context.stroke();
+					
+					context.beginPath();
+					context.lineWidth = 0.5;
+					context.strokeStyle = 'rgba( 255, 255, 255, 0.5 )';
+					context.moveTo( 0, height/2 );
+					context.lineTo( width, height/2 );
+					context.stroke();
+					
+					context.beginPath();
+					context.lineWidth = 0.5;
+					context.strokeStyle = 'rgba( 255, 255, 255, 0.5 )';
+					context.arc( width/2, height/2, 200, 0, Math.PI*2);
+					context.stroke();
+					
+					/**/
+					
+					/** /
+					var f = new AudioFrame();
+					f.audioDataResult.copyFrom( frame2.audioDataResult );
+					f.config.downSample = frame2.config.downSample;
+					frameHistory.unshift( f );
+					for( var i = frameHistory.length-1; i >= 0 ; i-- ) {
+						frameHistory[i].audioDataResult.multiply( 0.90 );
+						frameHistory[i].audioDataResult.smooth( 0.5, -1 );
+						//frameHistory[i].audioDataResult.smooth( 0.25 );
+					}
+					if( frameHistory.length > 0 ) {
+						frameHistory.pop();
+					}
+					/**/
+					
+					
+					//contextBg.fillStyle = 'black';
+					//contextBg.fillRect( 0, 0, this.width, this.height );
+					
+					if( colorGlow > 0 ) {
+						
+						contextBg.globalCompositeOperation = 'source-over';
+						if( colorGlowStrength == 3 ) contextBg.drawImage( canvas, -1, -1 );
+						if( colorGlowStrength == 3 ) contextBg.drawImage( canvas, 0, -1 );
+						if( colorGlowStrength == 3 ) contextBg.drawImage( canvas, 1, -1 );
+						if( colorGlowStrength == 2 ) contextBg.drawImage( canvas, -1, 0 );
+						if( colorGlowStrength == 1 ) contextBg.drawImage( canvas, 0, 0 );
+						if( colorGlowStrength == 2 ) contextBg.drawImage( canvas, 1, 0 );
+						if( colorGlowStrength == 3 ) contextBg.drawImage( canvas, -1, 1 );
+						if( colorGlowStrength == 3 ) contextBg.drawImage( canvas, 0, 1 );
+						if( colorGlowStrength == 3 ) contextBg.drawImage( canvas, 1, 1 );
+					}
+					
+					if( lastEqChange + 5000 > timestamp  ) {
+						frame2.renderEQ( context );
+					}
+					timer.stop('render');
+				}
+				catch( ex )
+				{
+					var caller_line = ex.stack.split("\n");
+					caller_line = caller_line[1];
+					var index = caller_line.indexOf("at ");
+					var clean = caller_line.slice(index+2, caller_line.length);
+					
+								
+					console.error( clean.replace( /^\s+/g, '' ).replace( /(http|file).+\//g, '' )  + ' ' + ex.message );
+				}
+				var t1 = performance.now();
+				fpsRenderTime += t1 - t0;
+				setTimeout( render, isPaused ? 1000 : 8.33 );
+			}
+			
+			var hasInit = false; // initialisation is simply triggered by first audioData event
+			function onInit()
+			{
+				storage.loadShapeList( 'as_autosave', shapeList );
+				if( svgSource )
+				{
+					svgSource.toShapeList( shapeList );
+				}
+				
+				updateStorageStats();
+			}
+			
+			/**
+			 * called on window/screen resize
+			 **/
+			function onResize() {
+				// update width/height
+				width = canvas.width = window.innerWidth;
+				height = canvas.height = window.innerHeight;
+				width = canvasBg.width = window.innerWidth;
+				height = canvasBg.height = window.innerHeight;
+			}
+			
+			function mouseDrawSquare()
+			{
+				this.smooth = false;
+				this.cx = 0;
+				this.cy = 0;
+				
+				this.x = 0;
+				this.y = 0;
+				
+				this.points = [];
+				this.empty = function() { this.points = []; }
+				
+				this.updatePoints = function( detail )
+				{
+					var dx = this.x - this.cx;
+					var dy = this.y - this.cy;
+					var r = ( Math.abs(dx) + Math.abs(dy) ) / 2;
+					dx = dx / Math.abs( dx );
+					dy = dy / Math.abs( dy );
+					
+					//var r = Math.sqrt( dx*dx + dy*dy );
+					
+					this.points = [];
+					this.points.push( { x: this.cx+r*dx/2, y: this.cy+r*dy, d: true } );
+					this.points.push( { x: this.cx+r*dx, y: this.cy+r*dy,   d: true } );
+					this.points.push( { x: this.cx+r*dx, y: this.cy, 	  d: true } );
+					this.points.push( { x: this.cx, 	 y: this.cy, 	  d: true } );
+					this.points.push( { x: this.cx, 	 y: this.cy+r*dy, d: true } );
+					this.points.push( { x: this.cx+r*dx/2, y: this.cy+r*dy, d: true } );
+				}
+				
+				this.mouseMove = function( x, y, isDown )
+				{
+					if( isDown ) {
+						this.x = x;
+						this.y = y;
+						this.updatePoints( 60 );
+					}
+					return this.points;
+				}
+				this.mouseDown = function( x, y )
+				{
+					this.points = [];
+					this.cx = this.x = x;
+					this.cy = this.y = y;
+					return this.points;
+				}
+				this.mouseUp = function( x, y )
+				{
+					this.x = x;
+					this.y = y;
+					this.updatePoints( 1080 );
+					return this.points;
+				}
+			}
+			
+			function mouseDrawRect()
+			{
+				this.smooth = false;
+				this.cx = 0;
+				this.cy = 0;
+				
+				this.x = 0;
+				this.y = 0;
+				
+				this.points = [];
+				this.empty = function() { this.points = []; }
+				
+				this.updatePoints = function( detail )
+				{
+					var dx = this.x - this.cx;
+					var dy = this.y - this.cy;
+					var r = ( dx + dy ) / 2;
+					//var r = Math.sqrt( dx*dx + dy*dy );
+					
+					this.points = [];
+					this.points.push( { x: this.cx+dx/2, y: this.cy+dy, d: true } );
+					this.points.push( { x: this.cx+dx, y: this.cy+dy, d: true } );
+					this.points.push( { x: this.cx+dx, y: this.cy, d: true } );
+					this.points.push( { x: this.cx, y: this.cy, d: true } );
+					this.points.push( { x: this.cx, y: this.cy+dy, d: true } );
+					this.points.push( { x: this.cx+dx/2, y: this.cy+dy, d: true } );
+					/*
+					this.points.push( { x: this.cx+dx/2, y: this.cy+dy, d: true } );
+					this.points.push( { x: this.cx+dx, y: this.cy+dy, d: true } );
+					this.points.push( { x: this.cx+dx, y: this.cy, d: true } );
+					this.points.push( { x: this.cx, y: this.cy, d: true } );
+					this.points.push( { x: this.cx, y: this.cy+dy, d: true } );
+					this.points.push( { x: this.cx+dx/2, y: this.cy+dy, d: true } );
+					*/
+				}
+				
+				this.mouseMove = function( x, y, isDown )
+				{
+					if( isDown ) {
+						this.x = x;
+						this.y = y;
+						this.updatePoints( 60 );
+					}
+					return this.points;
+				}
+				this.mouseDown = function( x, y )
+				{
+					this.points = [];
+					this.cx = this.x = x;
+					this.cy = this.y = y;
+					return this.points;
+				}
+				this.mouseUp = function( x, y )
+				{
+					this.x = x;
+					this.y = y;
+					this.updatePoints( 1080 );
+					return this.points;
+				}
+			}
+			
+			function mouseDrawCircle()
+			{
+				this.smooth = false;
+				this.cx = 0;
+				this.cy = 0;
+				
+				this.x = 0;
+				this.y = 0;
+				
+				this.points = [];
+				this.empty = function() { this.points = []; }
+				
+				this.updatePoints = function( detail )
+				{
+					var dx = this.x - this.cx;
+					var dy = this.y - this.cy;
+					var r = Math.sqrt( dx*dx + dy*dy );
+					
+					var radBase = Math.atan2( dx, dy );
+					this.points = [];
+					for( var i = 0; i <= detail; i++ )
+					{
+						var rad = Math.PI*2 * i / detail;
+						this.points.push( { x: Math.sin(rad+radBase)*r+this.cx, y: Math.cos(rad+radBase)*r + this.cy, d: true } );
+					}
+				}
+				
+				this.mouseMove = function( x, y, isDown )
+				{
+					if( isDown ) {
+						this.x = x;
+						this.y = y;
+						this.updatePoints( 60 );
+					}
+					return this.points;
+				}
+				this.mouseDown = function( x, y )
+				{
+					this.points = [];
+					this.cx = this.x = x;
+					this.cy = this.y = y;
+					return this.points;
+				}
+				this.mouseUp = function( x, y )
+				{
+					this.x = x;
+					this.y = y;
+					this.updatePoints( 1080 );
+					return this.points;
+				}
+			}
+			
+			function mouseDrawOval()
+			{
+				this.smooth = false;
+				this.cx = 0;
+				this.cy = 0;
+				
+				this.x = 0;
+				this.y = 0;
+				
+				this.points = [];
+				this.empty = function() { this.points = []; }
+				
+				this.updatePoints = function( detail )
+				{
+					var dx = this.x - this.cx;
+					var dy = this.y - this.cy;
+					var rx = Math.abs( dx );
+					var ry = Math.abs( dy );
+					
+					
+					var radBase = Math.atan2( 0, dy );
+					
+					this.points = [];
+					for( var i = 0; i <= detail; i++ )
+					{
+						var rad = Math.PI*2 * i / detail;
+						this.points.push( { x: Math.sin(rad+radBase)*rx+this.cx, y: Math.cos(rad+radBase)*ry + this.cy, d: true } );
+					}
+				}
+				
+				this.mouseMove = function( x, y, isDown )
+				{
+					if( isDown ) {
+						this.x = x;
+						this.y = y;
+						this.updatePoints( 60 );
+					}
+					return this.points;
+				}
+				this.mouseDown = function( x, y )
+				{
+					this.points = [];
+					this.cx = this.x = x;
+					this.cy = this.y = y;
+					return this.points;
+				}
+				this.mouseUp = function( x, y )
+				{
+					this.x = x;
+					this.y = y;
+					this.updatePoints( 1080 );
+					return this.points;
+				}
+			}
+			/*
+			function mouseDrawSquare()
+			{
+				this.smooth = false;
+				this.sx = 0;
+				this.sy = 0;
+				
+				this.x = 0;
+				this.y = 0;
+				
+				this.points = [];
+				this.empty = function() { this.points = []; }
+				
+				this.updatePoints = function( detail )
+				{
+					var dx = this.x - this.sx;
+					var dy = this.y - this.sy;
+					
+					
+					var dt1 = [  { x: this.cx, y: this.cy, d: true },
+								 { x: this.cx, y: this.cy, d: true }]
+					this.points = [];
+					for( var i = 0; i <= detail; i++ )
+					{
+						var rad = Math.PI*2 * i / detail;
+						this.points.push( { x: Math.sin(rad)*r+this.cx, y: Math.cos(rad)*r + this.cy, d: true } );
+					}
+				}
+				
+				this.mouseMove = function( x, y, isDown )
+				{
+					if( isDown ) {
+						this.x = x;
+						this.y = y;
+						this.updatePoints( 60 );
+					}
+					return this.points;
+				}
+				this.mouseDown = function( x, y )
+				{
+					this.points = [];
+					this.sx = this.x = x;
+					this.sy = this.y = y;
+					return this.points;
+				}
+				this.mouseUp = function( x, y )
+				{
+					this.x = x;
+					this.y = y;
+					this.updatePoints( 1080 );
+					return this.points;
+				}
+			}
+			
+			function mouseDrawRect()
+			{
+				this.smooth = false;
+				this.cx = 0;
+				this.cy = 0;
+				
+				this.x = 0;
+				this.y = 0;
+				
+				this.points = [];
+				this.empty = function() { this.points = []; }
+				
+				this.updatePoints = function( detail )
+				{
+					var dx = this.x - this.cx;
+					var dy = this.y - this.cy;
+					var rx = Math.abs( dx );
+					var ry = Math.abs( dy );
+					
+					this.points = [];
+					for( var i = 0; i <= detail; i++ )
+					{
+						var rad = Math.PI*2 * i / detail;
+						this.points.push( { x: Math.sin(rad)*rx+this.cx, y: Math.cos(rad)*ry + this.cy, d: true } );
+					}
+				}
+				
+				this.mouseMove = function( x, y, isDown )
+				{
+					if( isDown ) {
+						this.x = x;
+						this.y = y;
+						this.updatePoints( 60 );
+					}
+					return this.points;
+				}
+				this.mouseDown = function( x, y )
+				{
+					this.points = [];
+					this.cx = this.x = x;
+					this.cy = this.y = y;
+					return this.points;
+				}
+				this.mouseUp = function( x, y )
+				{
+					this.x = x;
+					this.y = y;
+					this.updatePoints( 1080 );
+					return this.points;
+				}
+			}
+			*/
+			function mouseDrawLine()
+			{
+				this.smooth = false;
+				this.points = [];
+				this.empty = function() { this.points = []; }
+				this.mouseMove = function( x, y, isDown )
+				{
+					if( isDown ) {
+						if( this.points.length > 1 ) this.points.shift() ;
+						this.points.unshift( { x: x, y: y, d: isDown } ) ;
+					}
+					return this.points;
+				}
+				this.mouseDown = function( x, y )
+				{
+					this.points = [];
+					this.points.unshift( { x: x, y: y, d: true } ) ;
+					return this.points;
+				}
+				this.mouseUp = function( x, y )
+				{
+					if( this.points.length > 1 ) this.points.shift() ;
+					this.points.unshift( { x: x, y: y, d: false } ) ;
+					return this.points;
+				}
+			}
+			
+			function mouseDrawScribble()
+			{
+				this.smooth = true;
+				this.points = [];
+				this.empty = function() { this.points = []; }
+				this.mouseMove = function( x, y, isDown )
+				{
+					if( isDown ) {
+						this.points.unshift( { x: x, y: y, d: isDown } ) ;
+					}
+					return this.points;
+				}
+				this.mouseDown = function( x, y )
+				{
+					this.points = [];
+					this.points.unshift( { x: x, y: y, d: true } ) ;
+					return this.points;
+				}
+				this.mouseUp = function( x, y )
+				{
+					this.points.unshift( { x: x, y: y, d: false } ) ;
+					return this.points;
+				}
+			}
+			
+			/**
+			 * called on mouse movement
+			 **/
+			var mousePath = [];
+			var mouseDown = false;
+			var mouseDownSince = 0;
+			var totalMovement = 0;
+			var mouseX = 0;
+			var mouseY = 0;
+			var drawMode = 0;
+			var drawController = new mouseDrawScribble();
+			
+			var selectMenu = null;
+			var selectedShape = null;
+			
+			function showMenu( x, y )
+			{
+				menu.position( x - 25, y - 25 );
+				menu.show();
+				setTimeout( function() {
+					menu.rootElement.onmouseover();
+				}, 1 );
+				lockedDrawing = true;
+			}
+			
+			function hideMenu()
+			{
+				if( menu.visible ) {
+					menu.hide( true );
+					if( selectMenu != null )
+					{
+						menu.removeChild( selectMenu.id );
+					}
+					lockedDrawing = false;
+				}
+			}
+			
+			function selectShape( s )
+			{
+				s.isSelected = true;
+				selectedShape = s;
+				editPanel.shape = s;
+				editPanel.show();
+			}
+			
+			function deselectShape( )
+			{
+				if( selectedShape ) {
+					selectedShape.isSelected = false;
+				}
+				selectedShape = null;
+				editPanel.shape = null;
+				editPanel.hide();
+			}
+			
+			var delayedMenu = new delayed( function() {
+				
+				deselectShape();
+				hideMenu();
+				
+				var shapes = shapeList.getShapesForPoint( [mouseX-offsetX, mouseY-offsetY] );
+				if( shapes.length > 0 ) {
+					selectMenu = menu.prependChild( 'opt-select', './icon_select.png', 'Select' );
+					if( shapes.length > 1 ) {
+						for( var i = 0; i < shapes.length; i++ ) {
+							var menuItem = selectMenu.addChild( 'shape1', null, '#' + (i+1) );
+							menuItem.shape = shapes[i];
+							
+							menuItem.onClick = function(e, el ) {
+								hideMenu();
+								selectShape( el.shape );
+							}
+						}
+					}
+					else {
+						selectMenu.shape = shapes[0];
+						selectMenu.onClick = function(e, el ) {
+							hideMenu();
+							selectShape( el.shape );
+						}
+					}
+				}
+				
+				showMenu( mouseX, mouseY );
+				drawController.empty();
+				mouseDown = false;
+			}, 1000 );
+			
+			function onMouseMove(e) {
+				var t0 = performance.now();
+				
+				totalMovement += Math.abs( mouseX-e.clientX ) + Math.abs( mouseY-e.clientY );
+				mouseX = e.clientX;
+				mouseY = e.clientY;
+				
+				if( mouseDown && allowDrawing && !lockedDrawing  ) {
+					drawController.mouseMove( mouseX, mouseY, mouseDown );
+					if( totalMovement > 10 ) {
+						delayedMenu.cancel();
+					}
+					/*
+					var time = performance.now() - mouseDownSince;
+					if( time > 1000 && totalMovement < 50 ) {
+						menu.position( mouseX, mouseY );
+						menu.show();
+						menu.mouseover();
+						mouseDown = false;
+					}*/
+				}
+				
+				var t1 = performance.now();
+				fpsRenderTime += t1 - t0;
+			}
+			
+			function onMouseDown(e)
+			{
+				var t0 = performance.now();
+				
+				totalMovement = 0;
+				mouseDownSince = performance.now();
+				mouseDown = true;
+				var onScreen = mouseX >= 0 && mouseY >= 0 && mouseX < width && mouseY < height;
+				if( onScreen && allowDrawing && !lockedDrawing  ) {
+					
+					drawController.empty();
+					drawController.mouseDown( mouseX, mouseY );
+					delayedMenu.trigger();
+				}
+				
+				var t1 = performance.now();
+				fpsRenderTime += t1 - t0;
+			}
+			
+			function onMouseUp(e) 
+			{
+				var t0 = performance.now();
+				//mousePath.unshift( { x: mouseX, y: mouseY, d: mouseDown, time: performance.now() } ) ;
+				
+				delayedMenu.cancel();
+				var onScreen = mouseX >= 0 && mouseY >= 0 && mouseX < width && mouseY < height;
+				if( onScreen && mouseDown && allowDrawing && !lockedDrawing ) {
+					var time = performance.now() - mouseDownSince;
+					//if( time > 1000 && totalMovement < 50 ) {
+					//	menu.position( mouseX, mouseY );
+					//	menu.show();
+					//	menu.mouseover();
+					//}
+					//else {
+						var pointsSource = drawController.mouseUp( mouseX, mouseY );
+						var points = [];
+						for( var i = 0; i < pointsSource.length; i++ )
+						{
+							points.push( [ (-offsetX + pointsSource[i].x-width/2)/radiusFactor, 
+										   (-offsetY + pointsSource[i].y-height/2)/radiusFactor ] );
+						}
+						if( points.length > 1 ) {
+							var s = new shapePointList([], drawController.smooth);
+							s.setRemoveDetailAmount( drawController.smooth ? 100 : 0 );
+							s.setData( points );
+							shapeList.add( s );
+							shapeList.updateAutosave();
+						}
+					//}
+					drawController.empty();
+				}
+				mouseDown = false;
+				//mousePath = [];
+				var t1 = performance.now();
+				fpsRenderTime += t1 - t0;
+			}
+			
+			
+			/**
+			 * called when new fft data is avabile
+			 *
+			 * @param data Array of 128 floats 
+			 **/
+			function onAudioData( data ) 
+			{
+				if( !hasInit ) {
+					hasInit = true;
+					onInit();
+				}
+				var t0 = performance.now();
+				timer.start('audio update');
+				
+				try {
+					
+					// update data in the 2 frames
+					frame2.update( data );
+					if( !frame2.hasAudio && animateWhenSilent == 1 )
+					{
+						for( var i = 0; i < 64; i++ ) {
+							var p = i / 63;
+							var p2 = t0/(60*1000);
+							var v = Math.sin( 23 * ( p + p2 ) * Math.PI*2 )+1;
+								//v += Math.cos( -16 * ( p + p2/10 ) * Math.PI*2 + Math.PI )+1;
+								//v += Math.sin( 32 * ( p + p2/15 ) * Math.PI*2 - Math.PI/2 )+1;
+								v += Math.cos( -31 * ( p - p2 ) * Math.PI/3 )/2;
+								//v += Math.cos( -4 * ( p + p2 ) * Math.PI*2 )+1;
+							v/=2;
+							data[i] = v;
+							data[i+64] = v ;
+						}
+						frame2.update( data, true );
+					}
+				}
+				catch(ex) { 
+					console.error( ex.message );
+				}				
+				hadAudioFrame = true;
+				timer.stop('audio update');
+				var t1 = performance.now();
+				fpsRenderTime += t1 - t0;
+			}
+			
+			var svgSource;
+			/*
+			var ajax = new XMLHttpRequest();
+			ajax.open("GET", "thunderdome-2.svg", true);
+			ajax.send();
+			ajax.onload = function(e) {
+				svgSource = new SvgSource( ajax.responseText );
+			}*/
+			function SvgSource( src, removeDetailAmount, cbUpdate, cbComplete )
+			{
+				var self = this;
+				var minX = Number.POSITIVE_INFINITY,
+					minY = Number.POSITIVE_INFINITY,
+					maxX = Number.NEGATIVE_INFINITY,
+					maxY = Number.NEGATIVE_INFINITY;
+					
+				var parser = new DOMParser();
+				var doc = parser.parseFromString(src, "image/svg+xml");
+				//flatten( doc.getElementsByTagName('svg')[0] );
+				var paths = doc.getElementsByTagName('path');				
+				this.pointLists = [];
+				this.totalPaths = paths.length;
+				this.currentPath = 0;
+				/*
+				for( var i = 0; i < paths.length; i++ ) {
+					var pathEl = paths[i];
+					var pts = [];
+					var pathLen = pathEl.getTotalLength();
+					
+					for( var j = 0; j <= (1024); j++ ){
+						var pt = pathEl.getPointAtLength( pathLen * j / (1024) );
+						var x = pt.x;
+						var y = pt.y;
+						if( x < minX ) minX = x;
+						if( y < minY ) minY = y;
+						if( x > maxX ) maxX = x;
+						if( y > maxY ) maxY = y;
+						pts.push([x, y]);
+						if( x == 0 && y == 0 ) console.log( 'busted' );
+					}
+					this.pointLists.push( pts );
+				}
+				*/
+				var onComplete = function()
+				{
+					var dx = maxX - minX;
+					var dy = maxY - minY;
+					var d = Math.max( dx, dy );
+					var d2 = Math.min( dx, dy );
+					
+					var dx1 = 1;
+					var dy1 = 1;
+					if( d == dx ) {
+						dy1 = dy / dx;
+					}
+					else {
+						dx1 = dx / dy;
+					}
+					
+						
+					for( var i = 0; i < self.pointLists.length; i++ ) {
+						var points = self.pointLists[i];	
+						for( var j = 0; j < points.length; j++ )
+						{
+							points[j][0] = ( ( points[j][0] - minX ) / dx ) * dx1 * 400 - 200 * dx1;
+							points[j][1] = ( ( points[j][1] - minY ) / dy ) * dy1 * 400 - 200 * dy1;
+						}
+					}
+				
+					if( hasInit ) {
+						self.toShapeList( shapeList );
+					}
+					if( cbComplete ) cbComplete();
+				}
+				
+					
+				var delayedIteration = new delayed( function()
+				{
+					var pathEl = paths[self.currentPath];
+					var pts = [];
+					var pathLen = pathEl.getTotalLength();
+					
+					for( var j = 0; j <= (1024); j++ ){
+						var pt = pathEl.getPointAtLength( pathLen * j / (1024) );
+						var x = pt.x;
+						var y = pt.y;
+						if( x < minX ) minX = x;
+						if( y < minY ) minY = y;
+						if( x > maxX ) maxX = x;
+						if( y > maxY ) maxY = y;
+						pts.push([x, y]);
+					}
+					self.pointLists.push( pts );
+					
+					self.currentPath++;
+					if( self.currentPath < self.totalPaths ) delayedIteration.trigger();
+					else onComplete();
+					if( cbUpdate ) cbUpdate( self.currentPath / self.totalPaths );
+				}, 1 );
+				
+				delayedIteration.trigger();
+				 
+				this.toShapeList = function( shapeList )
+				{
+					drawController.empty();
+					shapeList.empty();
+					for( var i = 0; i < this.pointLists.length; i++ ) {
+						var points = this.pointLists[i];
+						var s = new shapePointList( );
+						//console.error('detail removal:' + removeDetailAmount );
+						s.setRemoveDetailAmount( removeDetailAmount );
+						s.setData( points );
+						shapeList.add(s);
+					}
+				}
+			}
+			
+			
+		
+			/**
+			 * when document has been loaded, do all this stuff...
+			 *   	- setup
+			 * 		- register window resize event
+			 * 		- register audio listener
+			 * 		- set property listeners
+			 * 		- queue first frame fro rendering
+			 **/			
+			var startWp = function() 
+			{
+				setup(); // setup anything not already setup
+								
+				window.addEventListener('resize', onResize ); // in case screen resizes
+				window.addEventListener('mousemove', onMouseMove ); // in case screen resizes
+				window.addEventListener('mousedown', onMouseDown ); // in case screen resizes
+				window.addEventListener('mouseup', onMouseUp ); // in case screen resizes
+				onResize(); // call it to have width and height set correctly
+
+				// hook into wallpaper engins callback functions
+				window.wallpaperPropertyListener = {
+					applyUserProperties: function( p ) 
+					{ 
+						bgSettingsProxy.applyUserProperties( p );
+						if( fnInitSlideshow ) fnInitSlideshow();
+						// getColor(), getSlider(), getBool() can found in utils.js				
+						//if( p.frame2Color ) {  frame2Color = getColor( p.frame2Color.value );  }					
+						try {
+							// Assign the random seconds interval from the slider
+							if (p.randomSecondsInterval) { randomSecondsInterval = getSlider (p.randomSecondsInterval.value, 1, 3600); }
+						
+							/*if( p.backgroundColor ) { 
+								bgColor = getColor( p.backgroundColor.value ); 
+								bgTintElement.style.background = bgColor;
+								document.body.style.background = bgColor + ' ' + ( bgImage ? 'url("file:///' + bgImage + '") center center no-repeat' : '' ) + ''; 
+								document.body.style.backgroundSize = 'cover';
+							}
+							if( p.backgroundImage ) { 
+								bgImage = p.backgroundImage.value;
+								document.body.style.background = bgColor + ' ' + ( bgImage ? 'url("file:///' + bgImage + '") center center no-repeat' : '' ) + ''; 
+								document.body.style.backgroundSize = 'cover';
+							}
+							if( p.backgroundTint ) { 
+								backgroundTint = getSlider( p.backgroundTint.value, 0, 100 )/100;
+								if( backgroundTint > 0 ) {
+									bgTintElement.style.display = 'block';
+									bgTintElement.style.opacity = backgroundTint;
+								}
+								else {									
+									bgTintElement.style.display = 'none';
+								}
+							}*/
+							
+							if( p.rotation ) { baseRotation = getSlider( p.rotation.value, -180, 180 ); }
+							if( p.positionX ) {  offsetX = getSlider( p.positionX.value, -3000, 3000 ); }  
+							if( p.positionY ) {  offsetY = getSlider( p.positionY.value, -3000, 3000 ); }  
+							if( p.freqScaleAdjustment ) {  
+								freqScaleAdjustment = getSlider( p.freqScaleAdjustment.value, -100, 100 );
+								
+								if( freqScaleAdjustment < 0 ) {								
+									freqScaleAdjustment = -( 1 + freqScaleAdjustment / -100 );
+								}
+								else if( freqScaleAdjustment == 0 ) {								
+									freqScaleAdjustment = 0;
+								}
+								else {
+									freqScaleAdjustment = ( 1 + freqScaleAdjustment / 100 );
+								}
+								
+								shapeList.resetPreperation();
+							} 
+							if( p.freqScaleAdjustmentAnim ) {  
+								freqScaleAdjustmentAnim = getBool( p.freqScaleAdjustmentAnim.value ); 
+								shapeList.resetPreperation();
+							}
+							
+							if( p.render ) {
+								renderMethod = getSlider( p.render.value, 1, 9 );
+							}
+							if(  p.shape ) {
+								var shape = p.shape.value;
+								if( defaultGenerators.hasOwnProperty( shape ) ) {
+									var gen = new defaultGenerators[shape]();
+									gen.generate( shapeList , randomSecondsInterval );
+									if( hasInit ) shapeList.updateAutosave();
+								}
+								else {										
+									if( !shapeList.defaultShapes.hasOwnProperty( shape ) ) {
+										shape = 'circle';
+									}
+									if( shapeList.defaultShapes.hasOwnProperty( shape ) ) {
+										shapeList.empty();
+										shapeList.createShape( shape );
+										if( hasInit ) shapeList.updateAutosave();
+									}
+								}
+							}
+							
+							if( p.interpolation ) { interpolationSteps = getSlider( p.interpolation.value, 1, 10 );  } 
+							if( p.interpolationBalanced ) { interpolationBalanced = getBool( p.interpolationBalanced.value );  } 
+							
+							if( p.eq1 ) {  frame2.config.eqFreq1 = getSlider( p.eq1.value, 0, 220 ) * 100; if(initialized) lastEqChange = performance.now(); }  
+							if( p.eq2 ) {  frame2.config.eqFreq2 = getSlider( p.eq2.value, 0, 220 ) * 100; if(initialized) lastEqChange = performance.now(); }  
+							if( p.eq3 ) {  frame2.config.eqFreq3 = getSlider( p.eq3.value, 0, 220 ) * 100; if(initialized) lastEqChange = performance.now(); }  
+							if( p.eq1Strength ) {  frame2.config.eqFreq1Strength = getSlider( p.eq1Strength.value, 0, 100 ) / 100; if(initialized) lastEqChange = performance.now(); }  
+							if( p.eq2Strength ) {  frame2.config.eqFreq2Strength = getSlider( p.eq2Strength.value, 0, 100 ) / 100; if(initialized) lastEqChange = performance.now(); }  
+							if( p.eq3Strength ) {  frame2.config.eqFreq3Strength = getSlider( p.eq3Strength.value, 0, 100 ) / 100; if(initialized) lastEqChange = performance.now(); }  
+							if( p.eqWidth ) {  frame2.config.eqWidth = getSlider( p.eqWidth.value, 0, 30 ) ; if(initialized) lastEqChange = performance.now(); }  
+							if( p.eqStrength ) {  frame2.config.eqStrength = getSlider( p.eqStrength.value, 0, 100 ) / 100 ; if(initialized) lastEqChange = performance.now(); }  
+							
+							if( p.reverseAudio ) {  frame2.config.reverseFreq = getBool( p.reverseAudio.value ); }  // actually a combo, but this works too
+							if( p.frame2Pow ) {  frame2.config.powerOf = getSlider( p.frame2Pow.value, 0, 100 ); }  // actually a combo, but this works too
+							if( p.outline ) {  useOutline = getBool( p.outline.value ); }  
+							if( p.radius ) {  radiusFactor = getSlider( p.radius.value, 1, 1000 )/100; }  // actually a combo, but this works too
+							if( p.height ) {  
+								var h = getSlider( p.height.value, 1, 100 )/100; 
+								h -= 0.01; h /= 0.99; h = Math.pow( h, 2 ); h *= 0.99; h += 0.01;
+								frame2.config.ampFactor = h;
+								heightCutoff = cfgHeightCutoff * frame2.config.ampFactor; 
+								heightCutoff = heightCutoff * heightCutoff;
+							} 
+							if( p.heightCutoff ) {  
+								cfgHeightCutoff = getSlider( p.heightCutoff.value, 1, 100 ); 
+								heightCutoff = cfgHeightCutoff * frame2.config.ampFactor; 
+								heightCutoff = heightCutoff * heightCutoff;
+							}  
+							
+							//if( p.frame2Normalize ) {  frame2.config.normalize = getBool( p.frame2Normalize.value );  }
+							//if( p.frame2MotionBlur ) {  frame2.config.motionBlur = getBool( p.frame2MotionBlur.value );  }
+							//if( p.frame2Smooth ) {  frame2.config.smooth = getBool( p.frame2Smooth.value );  }
+							
+							//if( p.frame2NormalizeAmount ) {  frame2.config.normalizeFactor = 1 - getSlider( p.frame2NormalizeAmount.value, 0, 100 ) / 100;  }
+							if( p.frame2MotionBlurAmount ) {  frame2.config.motionBlurFactor = 1 - getSlider( p.frame2MotionBlurAmount.value, 0, 100 ) / 100;  }
+							//if( p.frame2SmoothAmount ) {  frame2.config.smoothFactor = getSlider( p.frame2SmoothAmount.value, 0, 100 ) / 100;  }
+							
+							// options
+							//if( p.optionsUserFps ) {  targetFramerateUser = getSlider( p.optionsUserFps.value, 0, 1000 ) ;   }  // actually a combo, but this works too
+							//if( p.optionRenderMethod ) { renderFunction = p.optionRenderMethod.value; }
+							
+							if( p.animateWhenSilent ) {  
+								animateWhenSilent = p.animateWhenSilent.value; 
+								if( animateWhenSilent === false ) animateWhenSilent = 0;
+								if( animateWhenSilent === true ) animateWhenSilent = 1;
+							} 
+							if( p.animateWhenSilentHeight ) {  
+								var h = getSlider( p.animateWhenSilentHeight.value, 1, 100 )/100; 
+								h -= 0.01; h /= 0.99; h = Math.pow( h, 2 ); h *= 0.99; h += 0.01;
+								animateWhenSilentHeight = h;
+							} 
+							
+							if( p.allowDrawing ) {  allowDrawing = getBool( p.allowDrawing.value ); }  
+
+							//if( p.heightDir ) {  heightDir = getSlider( p.heightDir.value, 1, 3 );  } 
+							if( p.cpuCores ) {  cpuCores = getSlider( p.cpuCores.value, 1, 16 );  } 
+							if( p.cpuPercWarning ) {  cpuWarningAt = getSlider( p.cpuPercWarning.value, 1, 100 );  } 
+							
+							if( p.colorRotation ) { colorRotation = getBool( p.colorRotation.value ); }
+							if( p.colorGradient ) { colorGradient = getSlider( p.colorGradient.value, 0, 3 ); }
+							if( p.color1 ) { color1 = getColorAsArray( p.color1.value ); color1 = rgbToHsl( color1[0], color1[1], color1[2], 255 ); }
+							if( p.color2 ) { color2 = getColorAsArray( p.color2.value ); color2 = rgbToHsl( color2[0], color2[1], color2[2], 255 ); }
+							if( p.color3 ) { color3 = getColorAsArray( p.color3.value ); color3 = rgbToHsl( color3[0], color3[1], color3[2], 255 ); }
+							
+							if( p.colorGlow ) { 
+								colorGlow = getSlider( p.colorGlow.value, 0, 20 ); 
+								if( colorGlow == 0 ) canvasBg.style.display = 'none';
+								else canvasBg.style.display = 'block';
+								if( colorGlow >=1 ) colorGlow += 1;
+								canvasBg.style.filter = 'blur(' + colorGlow + (colorGlow ? 'px' : '' ) + ')';
+							}
+							if( p.colorGlowStrength ) { 
+								colorGlowStrength = getSlider( p.colorGlowStrength.value, 1, 3 ); 
+							}
+							
+							if( p.troubleshootingUseAutoave ) {
+								shapeList.useAutosave = getBool( p.troubleshootingUseAutoave.value );
+							}
+							
+							
+							if( p.foregroundImage ) { fgElement.src = p.foregroundImage.value ? 'file:///' + p.foregroundImage.value : null; updateForegroundElement();}
+							if( p.foregroundOffsetX ) { fgOffsetX = getSlider( p.foregroundOffsetX.value, -3000, 3000); updateForegroundElement(); }
+							if( p.foregroundOffsetY ) { fgOffsetY = getSlider( p.foregroundOffsetY.value, -3000, 3000); updateForegroundElement(); }
+							if( p.foregroundRotation ) { fgRotation = getSlider( p.foregroundRotation.value, -180, 180); updateForegroundElement(); }
+							if( p.foregroundScale ) { fgScale = getSlider( p.foregroundScale.value, 1, 400); updateForegroundElement(); }
+							
+			
+						}
+						catch( ex ) { console.log( ex.message ); }
+					},
+					applyGeneralProperties: function( p ) 
+					{
+						//console.log( 'applyGeneralProperties' );
+						if( p.fps ) {
+							// this is the fps setting as users configured it in wallpaper engine
+							targetFramerate = p.fps;
+						}
+					},
+					setPaused: function( p ) 
+					{ 
+						//console.log( 'setPaused' );
+						isPaused = p ;
+						bgSettingsProxy.setPaused( p );
+					},
+				    userDirectoryFilesAddedOrChanged: function( propertyName, changedFiles ) 
+				    {
+						//console.log( 'userDirectoryFilesAddedOrChanged' );
+				    	bgSettingsProxy.userDirectoryFilesAddedOrChanged( propertyName, changedFiles );
+				    },
+				    userDirectoryFilesRemoved: function(propertyName, removedFiles) 
+				    {
+						//console.log( 'userDirectoryFilesRemoved' );
+				    	bgSettingsProxy.userDirectoryFilesRemoved( propertyName, removedFiles );
+				    }
+				};
+				
+				// register our own audio event
+				if( window.wallpaperRegisterAudioListener ) {
+					window.wallpaperRegisterAudioListener( onAudioData );
+				}
+				else {
+					console.error( 'can\'t register audio listener' );
+				}
+				
+				// start render loop by requesting first frame
+				window.requestAnimationFrame( render );
+			}
+			
+			startWp();
+		</script>
+	</body>
+</html>
