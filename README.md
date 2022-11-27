@@ -21,15 +21,16 @@ Link: [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=85
 - Added: Shape - Test (For debugging & testing purposes.)
 #
 ## Installation:
-1. Download the Zip archive and extract it.
+1. Download the ZIP archive and extract it.
+2. Run the ```Installer.bat``` file to install the wallpaper.
+3. The Audio Scratchboard (Enhanced) wallpaper should be ready to use.
 
-2. Go to your Steam installation directory: ```C:\Program Files\Steam\steamapps\common\wallpaper_engine\projects\myprojects\``` and copy all the file contents into a ```audio_scratchboard_enhanced``` folder.
+#### Manual Installation:
+- Go to your Steam installation directory: ```C:\Program Files\Steam\steamapps\common\wallpaper_engine\projects\myprojects\``` and copy all the file contents into a ```audio_scratchboard_enhanced``` folder.
 
 OR
 
-2. In Wallpaper Engine click ```Open Wallpaper``` and choose ```Open offline wallpaper``` and select the ```index.html``` file. 
-
-3. The Audio Scratchboard (Enhanced) wallpaper should now appear.
+- In Wallpaper Engine click ```Open Wallpaper``` and choose ```Open offline wallpaper``` and select the ```index.html``` file. 
 #
 ## Known Bugs:
 - Not all ```Default Shapes``` get randomly generated. So I tried rebuilding some of the shapes like the Circle and the Heart shape to make them functional enough. The ```Butterfly``` and ```Hemp``` are missing from the random generation.
