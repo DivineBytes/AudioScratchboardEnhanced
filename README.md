@@ -23,7 +23,7 @@ Link: [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=85
 ## Installation:
 1. Download the ZIP archive and extract it.
 2. Run the ```Installer.bat``` file to install the wallpaper.
-3. The Audio Scratchboard (Enhanced) wallpaper should be ready to use.
+3. The Audio Scratchboard (Enhanced) wallpaper should appear in Wallpaper Engine.
 
 #### Manual Installation:
 - Go to your Steam installation directory: ```C:\Program Files\Steam\steamapps\common\wallpaper_engine\projects\myprojects\``` and copy all the file contents into a ```audio_scratchboard_enhanced``` folder.
